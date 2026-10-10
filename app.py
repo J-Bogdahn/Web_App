@@ -79,8 +79,9 @@ def get_ki_antwort(model, system_prompt, transkript, aufgabenstellung):
         {"role": "user", "content": f"PROTOKOLL DER BISHERIGEN DEBATTE:\n{transkript}\n\nDEINE AUFGABE FÜR DIESE RUNDE:\n{aufgabenstellung}"}
     ]
     try:
+        # Hier wurde max_tokens auf 1500 erhöht, damit das Fazit nicht abbricht
         response = client.chat.completions.create(
-            model=model, messages=nachrichten, temperature=0.7, max_tokens=450
+            model=model, messages=nachrichten, temperature=0.7, max_tokens=1500
         )
         rohtext = response.choices[0].message.content or ""
         sauber = re.sub(r'<think>.*?</think>', '', rohtext, flags=re.DOTALL).strip()
@@ -173,9 +174,16 @@ if st.button("🚀 Debatte starten"):
     
     st.divider()
     st.success("Debatte abgeschlossen!")
+    
+    # Eindeutigen Dateinamen generieren: Erste 5 Wörter des Themas + Zeitstempel
+    thema_sauber = re.sub(r'[^a-zA-Z0-9äöüÄÖÜß]', '_', thema) # Entfernt Sonderzeichen
+    thema_kurz = "_".join(thema_sauber.split("_")[:5]) # Nimmt nur die ersten 5 Wörter
+    zeitstempel = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    dateiname = f"Debatte_{thema_kurz}_{zeitstempel}.pdf"
+
     st.download_button(
         label="📄 PDF-Protokoll herunterladen",
         data=pdf_buffer,
-        file_name=f"Debatte_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+        file_name=dateiname,
         mime="application/pdf"
     )
